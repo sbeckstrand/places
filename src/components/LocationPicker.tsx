@@ -7,7 +7,12 @@ import {
   NavigationControl,
   type MapMouseEvent,
 } from "maplibre-gl";
-import { collapseMapAttribution, mapStyleFor } from "@/lib/mapTheme";
+import {
+  collapseMapAttribution,
+  isDarkTheme,
+  mapStyleFor,
+  watchThemeClass,
+} from "@/lib/mapTheme";
 
 const DEFAULT_CENTER: [number, number] = [-98.5795, 39.8283];
 
@@ -39,10 +44,9 @@ export default function LocationPicker({
     if (!mapContainer.current || mapRef.current) return;
 
     const hasPin = latitude != null && longitude != null;
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
     const map = new MapLibreMap({
       container: mapContainer.current,
-      style: mapStyleFor(prefersDark.matches),
+      style: mapStyleFor(isDarkTheme()),
       center: hasPin ? [longitude!, latitude!] : DEFAULT_CENTER,
       zoom: hasPin ? 13 : 3,
       // Collapses the required OSM/OpenFreeMap attribution to a small "i"
@@ -57,13 +61,12 @@ export default function LocationPicker({
     );
     mapRef.current = map;
 
-    function handleThemeChange(e: MediaQueryListEvent) {
-      map.setStyle(mapStyleFor(e.matches));
-    }
-    prefersDark.addEventListener("change", handleThemeChange);
+    const stopWatchingTheme = watchThemeClass((dark) => {
+      map.setStyle(mapStyleFor(dark));
+    });
 
     return () => {
-      prefersDark.removeEventListener("change", handleThemeChange);
+      stopWatchingTheme();
       map.remove();
       mapRef.current = null;
     };

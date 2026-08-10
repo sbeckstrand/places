@@ -30,19 +30,27 @@ export default async function Navbar() {
           New Entry
         </Link>
       </div>
-      <form
-        action={async () => {
-          "use server";
-          await signOut({ redirectTo: "/login" });
-        }}
-      >
-        <button
-          type="submit"
+      <div className="flex items-center gap-4">
+        <Link
+          href="/settings"
           className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
         >
-          Sign out
-        </button>
-      </form>
+          Settings
+        </Link>
+        <form
+          action={async () => {
+            "use server";
+            await signOut({ redirectTo: "/login" });
+          }}
+        >
+          <button
+            type="submit"
+            className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
+          >
+            Sign out
+          </button>
+        </form>
+      </div>
     </nav>
   );
 }

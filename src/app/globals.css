@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,11 +14,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
@@ -25,24 +25,22 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  .maplibregl-popup-content {
-    background-color: #171717;
-    color: #ededed;
-  }
-  .maplibregl-popup-anchor-top .maplibregl-popup-tip {
-    border-bottom-color: #171717;
-  }
-  .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-    border-top-color: #171717;
-  }
-  .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-    border-right-color: #171717;
-  }
-  .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-    border-left-color: #171717;
-  }
-  .maplibregl-popup-close-button {
-    color: #ededed;
-  }
+.dark .maplibregl-popup-content {
+  background-color: #171717;
+  color: #ededed;
+}
+.dark .maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: #171717;
+}
+.dark .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: #171717;
+}
+.dark .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: #171717;
+}
+.dark .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: #171717;
+}
+.dark .maplibregl-popup-close-button {
+  color: #ededed;
 }
