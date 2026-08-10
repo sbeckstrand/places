@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  .maplibregl-popup-content {
+    background-color: #171717;
+    color: #ededed;
+  }
+  .maplibregl-popup-anchor-top .maplibregl-popup-tip {
+    border-bottom-color: #171717;
+  }
+  .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+    border-top-color: #171717;
+  }
+  .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+    border-right-color: #171717;
+  }
+  .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+    border-left-color: #171717;
+  }
+  .maplibregl-popup-close-button {
+    color: #ededed;
+  }
+}

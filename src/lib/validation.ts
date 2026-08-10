@@ -1,0 +1,35 @@
+import { z } from "zod";
+
+const optionalText = (max: number) =>
+  z
+    .string()
+    .max(max)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : undefined));
+
+export const entryPhotoSchema = z.object({
+  storageKey: z.string().min(1),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+});
+
+export const entryInputSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: optionalText(5000),
+  locationName: optionalText(200),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  website: z
+    .string()
+    .url()
+    .max(500)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : undefined)),
+  visitedAt: z.coerce.date(),
+  rating: z.number().int().min(1).max(5).optional(),
+  photos: z.array(entryPhotoSchema).default([]),
+});
+
+export const entryUpdateSchema = entryInputSchema.partial();
