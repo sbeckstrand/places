@@ -6,6 +6,8 @@ import MapView from "@/components/MapView";
 import DeleteEntryButton from "@/components/DeleteEntryButton";
 import PhotoPlaceholder from "@/components/PhotoPlaceholder";
 import PhotoGallery from "@/components/PhotoGallery";
+import StarRating from "@/components/StarRating";
+import { CATEGORY_LABELS } from "@/lib/categories";
 
 export default async function EntryDetailPage({
   params,
@@ -33,9 +35,12 @@ export default async function EntryDetailPage({
         <div>
           <h1 className="text-2xl font-semibold">{entry.title}</h1>
           <div className="mt-1 flex items-center gap-3 text-sm text-neutral-500">
+            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+              {CATEGORY_LABELS[entry.category]}
+            </span>
             <time>{new Date(entry.visitedAt).toLocaleDateString()}</time>
             {entry.locationName && <span>{entry.locationName}</span>}
-            {entry.rating != null && <span>{"★".repeat(entry.rating)}</span>}
+            <StarRating rating={entry.rating} size={16} />
           </div>
           {entry.address && (
             <p className="mt-1 text-sm text-neutral-500">{entry.address}</p>
@@ -97,6 +102,7 @@ export default async function EntryDetailPage({
                 latitude: entry.latitude!,
                 longitude: entry.longitude!,
                 visitedAt: entry.visitedAt.toISOString(),
+                category: entry.category,
                 rating: entry.rating,
                 thumbnailKey: entry.photos[0]?.storageKey ?? null,
               },

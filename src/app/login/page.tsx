@@ -33,7 +33,7 @@ export default async function LoginPage({
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
       <div>
-        <h1 className="text-2xl font-semibold">Foodie</h1>
+        <h1 className="text-2xl font-semibold">Places</h1>
         <p className="text-sm text-neutral-500">Sign in to your account</p>
       </div>
 

@@ -37,6 +37,7 @@ export default async function EditEntryPage({
           longitude: entry.longitude,
           website: entry.website ?? "",
           visitedAt: entry.visitedAt.toISOString().slice(0, 10),
+          category: entry.category,
           rating: entry.rating,
           photos: entry.photos.map((p) => ({ storageKey: p.storageKey })),
         }}

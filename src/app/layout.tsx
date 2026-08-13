@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Foodie",
-  description: "A place to log and rate the food you've eaten",
+  title: "Places",
+  description: "A place to log and rate the places you've been",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

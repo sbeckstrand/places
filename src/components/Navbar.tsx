@@ -9,7 +9,7 @@ export default async function Navbar() {
     <nav className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
       <div className="flex items-center gap-5">
         <Link href="/" className="font-semibold">
-          Foodie
+          Places
         </Link>
         <Link
           href="/"

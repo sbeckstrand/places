@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Category } from "@/generated/prisma/enums";
 
 const optionalText = (max: number) =>
   z
@@ -30,7 +31,8 @@ export const entryInputSchema = z.object({
     .or(z.literal(""))
     .transform((v) => (v ? v : undefined)),
   visitedAt: z.coerce.date(),
-  rating: z.number().int().min(1).max(5).optional(),
+  category: z.enum(Category).default("OTHER"),
+  rating: z.number().min(0.5).max(5).multipleOf(0.5).optional(),
   photos: z.array(entryPhotoSchema).default([]),
 });
 

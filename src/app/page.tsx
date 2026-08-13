@@ -29,7 +29,7 @@ export default async function Home() {
         <p className="text-neutral-500">
           No entries yet.{" "}
           <Link href="/entries/new" className="underline">
-            Log your first meal
+            Log your first place
           </Link>
           .
         </p>

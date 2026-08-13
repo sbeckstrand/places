@@ -4,6 +4,9 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import LocationPicker from "@/components/LocationPicker";
 import PhotoPlaceholder from "@/components/PhotoPlaceholder";
+import StarRatingInput from "@/components/StarRatingInput";
+import { Category } from "@/generated/prisma/enums";
+import { CATEGORY_LABELS, CATEGORY_OPTIONS } from "@/lib/categories";
 
 type PlaceCandidate = {
   id: string;
@@ -14,6 +17,7 @@ type PlaceCandidate = {
   longitude: number;
   website: string | null;
   locationDescription: string | null;
+  category: Category;
   photoName: string | null;
 };
 
@@ -37,6 +41,7 @@ export type EntryFormInitial = {
   longitude: number | null;
   website: string;
   visitedAt: string; // yyyy-mm-dd
+  category: Category;
   rating: number | null;
   photos: { storageKey: string }[];
 };
@@ -74,6 +79,9 @@ export default function EntryForm({
   );
   const [website, setWebsite] = useState(initial?.website ?? "");
   const [visitedAt, setVisitedAt] = useState(initial?.visitedAt ?? todayIso());
+  const [category, setCategory] = useState<Category>(
+    initial?.category ?? Category.FOOD,
+  );
   const [rating, setRating] = useState<number | undefined>(
     initial?.rating ?? undefined,
   );
@@ -135,6 +143,7 @@ export default function EntryForm({
     if (candidate.locationDescription) {
       setLocationDescription(candidate.locationDescription);
     }
+    setCategory(candidate.category);
     setSuggestedPhotoName(candidate.photoName);
     setCandidates([]);
   }
@@ -244,6 +253,7 @@ export default function EntryForm({
         longitude,
         website,
         visitedAt,
+        category,
         rating,
         photos: entryPhotos,
       };
@@ -353,7 +363,25 @@ export default function EntryForm({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="category" className="text-sm font-medium">
+            Category
+          </label>
+          <select
+            id="category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value as Category)}
+            className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900"
+          >
+            {CATEGORY_OPTIONS.map((c) => (
+              <option key={c} value={c}>
+                {CATEGORY_LABELS[c]}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="flex flex-col gap-1">
           <label htmlFor="visitedAt" className="text-sm font-medium">
             Date
@@ -370,18 +398,8 @@ export default function EntryForm({
 
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">Rating</label>
-          <div className="flex items-center gap-1 py-2">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setRating(rating === n ? undefined : n)}
-                className="text-xl leading-none"
-                aria-label={`${n} star`}
-              >
-                {rating != null && n <= rating ? "★" : "☆"}
-              </button>
-            ))}
+          <div className="flex items-center py-1">
+            <StarRatingInput value={rating} onChange={setRating} size={28} />
           </div>
         </div>
       </div>

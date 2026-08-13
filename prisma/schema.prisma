@@ -59,6 +59,14 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+enum Category {
+  FOOD
+  ENTERTAINMENT
+  NATURE
+  SHOP
+  OTHER
+}
+
 model Entry {
   id                  String   @id @default(cuid())
   title               String
@@ -70,7 +78,8 @@ model Entry {
   longitude           Float?
   website             String?
   visitedAt           DateTime
-  rating              Int?
+  category            Category @default(OTHER)
+  rating              Float?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

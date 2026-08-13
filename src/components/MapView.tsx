@@ -17,6 +17,8 @@ import {
   mapStyleFor,
   watchThemeClass,
 } from "@/lib/mapTheme";
+import { STAR_PATH, starFillPercents } from "@/lib/starRating";
+import type { Category } from "@/generated/prisma/enums";
 
 const DEFAULT_CENTER: [number, number] = [-98.5795, 39.8283];
 
@@ -24,6 +26,22 @@ const DEFAULT_CENTER: [number, number] = [-98.5795, 39.8283];
 // (it's MapLibre popup content, not React), so it's inlined as markup here
 // rather than shared as a component.
 const PHOTO_PLACEHOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>`;
+
+// Same star glyph/fill math as StarRating — this popup is built with raw DOM
+// calls (it's MapLibre popup content, not React), so it's assembled as
+// markup here rather than shared as a component.
+function starsMarkup(rating: number, sizePx = 12): string {
+  return starFillPercents(rating)
+    .map(
+      (pct) =>
+        `<span class="relative inline-block shrink-0" style="width:${sizePx}px;height:${sizePx}px">` +
+        `<svg viewBox="0 0 20 20" fill="currentColor" class="absolute inset-0 h-full w-full text-neutral-300 dark:text-neutral-700"><path d="${STAR_PATH}"/></svg>` +
+        `<span class="absolute inset-0 overflow-hidden" style="width:${pct}%">` +
+        `<svg viewBox="0 0 20 20" fill="currentColor" class="text-amber-400" style="width:${sizePx}px;height:${sizePx}px"><path d="${STAR_PATH}"/></svg>` +
+        `</span></span>`,
+    )
+    .join("");
+}
 
 // Above this many entries in a cluster, zoom in to split it apart instead of
 // listing every entry in the picker popup.
@@ -35,44 +53,76 @@ export type MapEntry = {
   latitude: number;
   longitude: number;
   visitedAt: string;
+  category: Category;
   rating: number | null;
   thumbnailKey: string | null;
 };
+
+function entriesToGeoJSON(
+  entries: MapEntry[],
+): GeoJSON.FeatureCollection<GeoJSON.Point> {
+  return {
+    type: "FeatureCollection",
+    features: entries.map((e) => ({
+      type: "Feature",
+      properties: {
+        id: e.id,
+        title: e.title,
+        visitedAt: e.visitedAt,
+        rating: e.rating,
+        thumbnailKey: e.thumbnailKey,
+      },
+      geometry: { type: "Point", coordinates: [e.longitude, e.latitude] },
+    })),
+  };
+}
 
 export default function MapView({ entries }: { entries: MapEntry[] }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const routerRef = useRef(router);
+  const mapRef = useRef<MapLibreMap | null>(null);
+  // Kept current on every render so the mount-once effect below (and its
+  // "style.load" handler, which re-fires on theme-driven style swaps) can
+  // always read the latest filtered entries without re-running.
+  const entriesRef = useRef(entries);
 
   useEffect(() => {
     routerRef.current = router;
   }, [router]);
 
   useEffect(() => {
+    entriesRef.current = entries;
+  }, [entries]);
+
+  // Pushes filtered data into the already-created map instead of tearing
+  // down and rebuilding it, so toggling map filters doesn't reset the
+  // camera position/zoom. Skips the render that the mount effect below
+  // already consumed as its initial data.
+  const skipNextUpdate = useRef(true);
+  useEffect(() => {
+    if (skipNextUpdate.current) {
+      skipNextUpdate.current = false;
+      return;
+    }
+    const source = mapRef.current?.getSource("entries") as
+      | GeoJSONSource
+      | undefined;
+    source?.setData(entriesToGeoJSON(entries));
+  }, [entries]);
+
+  useEffect(() => {
     if (!mapContainer.current) return;
 
-    const geojson: GeoJSON.FeatureCollection<GeoJSON.Point> = {
-      type: "FeatureCollection",
-      features: entries.map((e) => ({
-        type: "Feature",
-        properties: {
-          id: e.id,
-          title: e.title,
-          visitedAt: e.visitedAt,
-          rating: e.rating,
-          thumbnailKey: e.thumbnailKey,
-        },
-        geometry: { type: "Point", coordinates: [e.longitude, e.latitude] },
-      })),
-    };
+    const initialEntries = entriesRef.current;
 
     let bounds: LngLatBounds | null = null;
-    if (entries.length > 0) {
-      bounds = entries.reduce(
+    if (initialEntries.length > 0) {
+      bounds = initialEntries.reduce(
         (b, e) => b.extend([e.longitude, e.latitude]),
         new LngLatBounds(
-          [entries[0].longitude, entries[0].latitude],
-          [entries[0].longitude, entries[0].latitude],
+          [initialEntries[0].longitude, initialEntries[0].latitude],
+          [initialEntries[0].longitude, initialEntries[0].latitude],
         ),
       );
     }
@@ -87,6 +137,7 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
       // still there and expands on click, just not taking up space.
       attributionControl: { compact: true },
     });
+    mapRef.current = map;
     map.addControl(new NavigationControl(), "top-right");
     collapseMapAttribution(map, mapContainer.current);
 
@@ -136,10 +187,16 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
         textWrap.appendChild(titleEl);
 
         const metaEl = document.createElement("span");
-        metaEl.className = "text-xs text-neutral-500";
-        const dateStr = new Date(item.visitedAt).toLocaleDateString();
-        metaEl.textContent =
-          item.rating != null ? `${dateStr} · ${"★".repeat(item.rating)}` : dateStr;
+        metaEl.className = "flex items-center gap-1 text-xs text-neutral-500";
+        const dateEl = document.createElement("span");
+        dateEl.textContent = new Date(item.visitedAt).toLocaleDateString();
+        metaEl.appendChild(dateEl);
+        if (item.rating != null) {
+          const starsEl = document.createElement("span");
+          starsEl.className = "inline-flex items-center gap-0.5";
+          starsEl.innerHTML = starsMarkup(item.rating, 12);
+          metaEl.appendChild(starsEl);
+        }
         textWrap.appendChild(metaEl);
 
         btn.appendChild(textWrap);
@@ -158,7 +215,7 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
     // style is ready.
     let hasFitBounds = false;
     function setupLayers() {
-      if (!hasFitBounds && bounds && entries.length > 1) {
+      if (!hasFitBounds && bounds && initialEntries.length > 1) {
         // animate:false makes this an instant jump rather than an eased
         // transition — appropriate for the initial fit, and avoids relying
         // on a requestAnimationFrame-driven animation actually progressing
@@ -167,9 +224,12 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
         hasFitBounds = true;
       }
 
+      // Reads the ref (not the initial closure) so a style reload — e.g.
+      // from a theme switch — rebuilds the source with whatever's currently
+      // filtered in, not what was passed in on mount.
       map.addSource("entries", {
         type: "geojson",
-        data: geojson,
+        data: entriesToGeoJSON(entriesRef.current),
         cluster: true,
         clusterMaxZoom: 14,
         clusterRadius: 50,
@@ -294,8 +354,13 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
     return () => {
       stopWatchingTheme();
       map.remove();
+      mapRef.current = null;
     };
-  }, [entries]);
+    // Mount-once: creates the map using whichever `entries` were passed on
+    // first render (see entriesRef/skipNextUpdate above for how later prop
+    // changes — e.g. toggling a map filter — get applied without rebuilding
+    // the map and losing the camera position).
+  }, []);
 
   // The ref'd div becomes `.maplibregl-map` (maplibre-gl adds that class
   // itself), and maplibre-gl's own unlayered CSS beats Tailwind v4's

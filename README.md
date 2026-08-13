@@ -1,8 +1,8 @@
-# Foodie
+# Places
 
-A self-hosted app for logging and rating the food you've eaten — title, photos,
-location, date, website, description, and a star rating per entry — with a map
-view that clusters entries geographically.
+A self-hosted app for logging and rating the places you've been — title, photos,
+location, date, website, description, category, and a star rating per entry —
+with a map view that clusters entries geographically.
 
 ## Stack
 
