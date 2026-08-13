@@ -7,6 +7,7 @@ import {
   LngLatBounds,
   NavigationControl,
   Popup,
+  type DataDrivenPropertyValueSpecification,
   type GeoJSONSource,
   type MapGeoJSONFeature,
   type MapLayerMouseEvent,
@@ -18,6 +19,7 @@ import {
   watchThemeClass,
 } from "@/lib/mapTheme";
 import { STAR_PATH, starFillPercents } from "@/lib/starRating";
+import { CATEGORY_MAP_COLORS } from "@/lib/categories";
 import type { Category } from "@/generated/prisma/enums";
 
 const DEFAULT_CENTER: [number, number] = [-98.5795, 39.8283];
@@ -69,6 +71,7 @@ function entriesToGeoJSON(
         id: e.id,
         title: e.title,
         visitedAt: e.visitedAt,
+        category: e.category,
         rating: e.rating,
         thumbnailKey: e.thumbnailKey,
       },
@@ -274,7 +277,12 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
         source: "entries",
         filter: ["!", ["has", "point_count"]],
         paint: {
-          "circle-color": "#ef4444",
+          "circle-color": [
+            "match",
+            ["get", "category"],
+            ...Object.entries(CATEGORY_MAP_COLORS).flat(),
+            CATEGORY_MAP_COLORS.OTHER,
+          ] as unknown as DataDrivenPropertyValueSpecification<string>,
           "circle-radius": 8,
           "circle-stroke-width": 2,
           "circle-stroke-color": "#ffffff",
