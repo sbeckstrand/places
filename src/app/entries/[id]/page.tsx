@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import MapView from "@/components/MapView";
 import DeleteEntryButton from "@/components/DeleteEntryButton";
 import PhotoPlaceholder from "@/components/PhotoPlaceholder";
+import PhotoGallery from "@/components/PhotoGallery";
 
 export default async function EntryDetailPage({
   params,
@@ -57,17 +58,7 @@ export default async function EntryDetailPage({
       </div>
 
       {entry.photos.length > 0 ? (
-        <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {entry.photos.map((photo) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={photo.id}
-              src={`/api/images/${photo.storageKey}`}
-              alt={entry.title}
-              className="aspect-square w-full rounded-md object-cover"
-            />
-          ))}
-        </div>
+        <PhotoGallery photos={entry.photos} alt={entry.title} />
       ) : (
         <PhotoPlaceholder className="mb-6 aspect-[4/3] w-full max-w-xs rounded-md" />
       )}
