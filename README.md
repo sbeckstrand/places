@@ -141,8 +141,27 @@ through without a session; everything else still redirects to `/login`. Each
 of those routes then does its own `isPublic` check against the database —
 the proxy only decides who's allowed to *ask*.
 
+## CI / container image
+
+`.github/workflows/docker-build.yaml` builds the same `Dockerfile` used for
+local dev and pushes it to `ghcr.io/sbeckstrand/foodie` on every push to
+`main` (or manually via `workflow_dispatch`), tagged with the short commit
+SHA. A second job then updates the image tag in the `k8s-apps` repo
+(`apps/services/foodie/values-image.yaml`, using the `K8S_APPS_PAT` secret)
+for GitOps-style deploys.
+
+Note this publishes the *dev* image as-is (`next dev`, expects the repo
+bind-mounted in via `docker-compose.yml` for hot reload) — it's not yet a
+standalone production image (`next build` + `next start`, prod deps only).
+The rest of the Helm chart (`Chart.yaml`, `deployment.yaml`, `service.yaml`,
+`ingress.yaml`) also doesn't exist in `k8s-apps` yet, so nothing actually
+deploys from this yet — the pipeline just keeps a pullable image and an
+up-to-date tag file ready for whenever that's built out.
+
 ## What's not done yet
 
 - Real Google OAuth credentials (code path is ready — see Auth above)
+- A production image (`next build`/`next start`) and the rest of the Helm
+  chart in `k8s-apps` — see CI section above
 - Production deployment config (real S3, managed Postgres, secrets management)
 - Automated tests
