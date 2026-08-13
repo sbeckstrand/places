@@ -80,8 +80,9 @@ Uploads go through `POST /api/uploads`, which:
 3. Returns the storage key, which gets attached to the `Entry` on save.
 
 Photos are served back through `GET /api/images/[...key]`, which streams from
-MinIO after checking the requesting user owns the `entries/<userId>/...`
-prefix — the bucket itself stays private.
+MinIO after checking either that the requesting user owns the
+`entries/<userId>/...` prefix, or (for anonymous/other-user requests) that the
+photo belongs to a public entry — the bucket itself stays private otherwise.
 
 ## Map
 
@@ -119,6 +120,26 @@ instead of the real page). So there's no link-following on the server at
 all — if you only have a share link, open it yourself and type in the name,
 or copy the resolved `maps.google.com/place/...` URL if your browser lands
 on one.
+
+## Sharing & public entries
+
+Entries are private by default. Checking "Make this entry public" on the
+entry form (create or edit) makes two things reachable without an account:
+
+- The entry's own page (`/entries/<id>`) — same URL whether you're the owner
+  or not; the page itself decides what to show. Edit/Delete only render for
+  the owner.
+- `/u/<userId>/map` — a per-user map showing only that user's public,
+  located entries. Always live at that URL (no separate toggle); it just has
+  nothing on it until you have at least one public entry with a pin. Grab
+  the link from the "Copy public map link" button on your own `/map` page.
+
+Route-level access is enforced in `src/proxy.ts` (this Next.js version's
+renamed `middleware.ts`) — it explicitly allow-lists `/entries/<id>` (not
+`/entries/new` or `/entries/<id>/edit`), `/u/*`, and `/api/images/*` to pass
+through without a session; everything else still redirects to `/login`. Each
+of those routes then does its own `isPublic` check against the database —
+the proxy only decides who's allowed to *ask*.
 
 ## What's not done yet
 

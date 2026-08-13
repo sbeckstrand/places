@@ -7,7 +7,9 @@ import DeleteEntryButton from "@/components/DeleteEntryButton";
 import PhotoPlaceholder from "@/components/PhotoPlaceholder";
 import PhotoGallery from "@/components/PhotoGallery";
 import StarRating from "@/components/StarRating";
+import CopyLinkButton from "@/components/CopyLinkButton";
 import { CATEGORY_LABELS } from "@/lib/categories";
+import { formatVisitedDate } from "@/lib/formatDate";
 
 export default async function EntryDetailPage({
   params,
@@ -15,7 +17,6 @@ export default async function EntryDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const session = await auth();
-  if (!session?.user) return null;
 
   const { id } = await params;
   const entry = await db.entry.findUnique({
@@ -23,7 +24,8 @@ export default async function EntryDetailPage({
     include: { photos: { orderBy: { createdAt: "asc" } } },
   });
 
-  if (!entry || entry.authorId !== session.user.id) {
+  const isOwner = !!session?.user && entry?.authorId === session.user.id;
+  if (!entry || (!entry.isPublic && !isOwner)) {
     notFound();
   }
 
@@ -38,7 +40,12 @@ export default async function EntryDetailPage({
             <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
               {CATEGORY_LABELS[entry.category]}
             </span>
-            <time>{new Date(entry.visitedAt).toLocaleDateString()}</time>
+            {entry.isPublic && (
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                Public
+              </span>
+            )}
+            <time>{formatVisitedDate(entry.visitedAt)}</time>
             {entry.locationName && <span>{entry.locationName}</span>}
             <StarRating rating={entry.rating} size={16} />
           </div>
@@ -52,13 +59,23 @@ export default async function EntryDetailPage({
           )}
         </div>
         <div className="flex shrink-0 gap-2">
-          <Link
-            href={`/entries/${entry.id}/edit`}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-          >
-            Edit
-          </Link>
-          <DeleteEntryButton entryId={entry.id} />
+          {entry.isPublic && (
+            <CopyLinkButton
+              path={`/entries/${entry.id}`}
+              className="px-3 py-2"
+            />
+          )}
+          {isOwner && (
+            <>
+              <Link
+                href={`/entries/${entry.id}/edit`}
+                className="rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+              >
+                Edit
+              </Link>
+              <DeleteEntryButton entryId={entry.id} />
+            </>
+          )}
         </div>
       </div>
 

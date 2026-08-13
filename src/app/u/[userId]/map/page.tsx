@@ -1,15 +1,24 @@
-import { auth } from "@/lib/auth";
+import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import MapFilters from "@/components/MapFilters";
-import CopyLinkButton from "@/components/CopyLinkButton";
 
-export default async function MapPage() {
-  const session = await auth();
-  if (!session?.user) return null;
+export default async function PublicUserMapPage({
+  params,
+}: {
+  params: Promise<{ userId: string }>;
+}) {
+  const { userId } = await params;
+
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
+  if (!user) notFound();
 
   const entries = await db.entry.findMany({
     where: {
-      authorId: session.user.id,
+      authorId: userId,
+      isPublic: true,
       latitude: { not: null },
       longitude: { not: null },
     },
@@ -38,16 +47,15 @@ export default async function MapPage() {
 
   return (
     <main className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between gap-4 border-b border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800">
-        <p className="text-neutral-500">
-          Share a public map showing only your public entries.
-        </p>
-        <CopyLinkButton
-          path={`/u/${session.user.id}/map`}
-          label="Copy public map link"
-        />
+      <div className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+        <h1 className="text-lg font-semibold">
+          {user.name ? `${user.name}'s Places` : "Public map"}
+        </h1>
       </div>
-      <MapFilters entries={mapEntries} />
+      <MapFilters
+        entries={mapEntries}
+        emptyMessage="No public entries with a location yet."
+      />
     </main>
   );
 }

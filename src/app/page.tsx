@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import EntryCard from "@/components/EntryCard";
+import EntryBulkGrid from "@/components/EntryBulkGrid";
 
 export default async function Home() {
   const session = await auth();
@@ -34,11 +34,7 @@ export default async function Home() {
           .
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {entries.map((entry) => (
-            <EntryCard key={entry.id} entry={entry} />
-          ))}
-        </div>
+        <EntryBulkGrid entries={entries} />
       )}
     </main>
   );

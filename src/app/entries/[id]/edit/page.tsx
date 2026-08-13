@@ -39,6 +39,7 @@ export default async function EditEntryPage({
           visitedAt: entry.visitedAt.toISOString().slice(0, 10),
           category: entry.category,
           rating: entry.rating,
+          isPublic: entry.isPublic,
           photos: entry.photos.map((p) => ({ storageKey: p.storageKey })),
         }}
       />

@@ -20,6 +20,7 @@ import {
 } from "@/lib/mapTheme";
 import { STAR_PATH, starFillPercents } from "@/lib/starRating";
 import { CATEGORY_MAP_COLORS } from "@/lib/categories";
+import { formatVisitedDate } from "@/lib/formatDate";
 import type { Category } from "@/generated/prisma/enums";
 
 const DEFAULT_CENTER: [number, number] = [-98.5795, 39.8283];
@@ -192,7 +193,7 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
         const metaEl = document.createElement("span");
         metaEl.className = "flex items-center gap-1 text-xs text-neutral-500";
         const dateEl = document.createElement("span");
-        dateEl.textContent = new Date(item.visitedAt).toLocaleDateString();
+        dateEl.textContent = formatVisitedDate(item.visitedAt);
         metaEl.appendChild(dateEl);
         if (item.rating != null) {
           const starsEl = document.createElement("span");

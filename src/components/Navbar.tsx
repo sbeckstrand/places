@@ -3,7 +3,21 @@ import { auth, signOut } from "@/lib/auth";
 
 export default async function Navbar() {
   const session = await auth();
-  if (!session?.user) return null;
+  if (!session?.user) {
+    return (
+      <nav className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+        <Link href="/" className="font-semibold">
+          Places
+        </Link>
+        <Link
+          href="/login"
+          className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
+        >
+          Sign in
+        </Link>
+      </nav>
+    );
+  }
 
   return (
     <nav className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">

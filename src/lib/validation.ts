@@ -33,6 +33,7 @@ export const entryInputSchema = z.object({
   visitedAt: z.coerce.date(),
   category: z.enum(Category).default("OTHER"),
   rating: z.number().min(0.5).max(5).multipleOf(0.5).optional(),
+  isPublic: z.boolean().default(false),
   photos: z.array(entryPhotoSchema).default([]),
 });
 

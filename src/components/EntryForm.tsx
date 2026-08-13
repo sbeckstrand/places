@@ -43,6 +43,7 @@ export type EntryFormInitial = {
   visitedAt: string; // yyyy-mm-dd
   category: Category;
   rating: number | null;
+  isPublic: boolean;
   photos: { storageKey: string }[];
 };
 
@@ -85,6 +86,7 @@ export default function EntryForm({
   const [rating, setRating] = useState<number | undefined>(
     initial?.rating ?? undefined,
   );
+  const [isPublic, setIsPublic] = useState(initial?.isPublic ?? false);
   const [photos, setPhotos] = useState<PhotoItem[]>(
     (initial?.photos ?? []).map((p) => ({
       key: p.storageKey,
@@ -255,6 +257,7 @@ export default function EntryForm({
         visitedAt,
         category,
         rating,
+        isPublic,
         photos: entryPhotos,
       };
 
@@ -561,6 +564,23 @@ export default function EntryForm({
             </p>
           </div>
         )}
+      </div>
+
+      <div className="flex flex-col gap-1 rounded-md border border-neutral-200 p-3 dark:border-neutral-800">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+            className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-700"
+          />
+          Make this entry public
+        </label>
+        <p className="text-xs text-neutral-500">
+          Anyone with the link can view a public entry — no account needed.
+          It also appears on your shareable public map. Private entries
+          (the default) are only visible to you.
+        </p>
       </div>
 
       {formError && <p className="text-sm text-red-600">{formError}</p>}

@@ -80,6 +80,7 @@ model Entry {
   visitedAt           DateTime
   category            Category @default(OTHER)
   rating              Float?
+  isPublic            Boolean  @default(false)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

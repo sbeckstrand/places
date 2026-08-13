@@ -6,7 +6,13 @@ import CategoryFilterDropdown from "@/components/CategoryFilterDropdown";
 import { CATEGORY_OPTIONS } from "@/lib/categories";
 import type { Category } from "@/generated/prisma/enums";
 
-export default function MapFilters({ entries }: { entries: MapEntry[] }) {
+export default function MapFilters({
+  entries,
+  emptyMessage = "No entries with a location yet — add coordinates when creating an entry to see it here.",
+}: {
+  entries: MapEntry[];
+  emptyMessage?: string;
+}) {
   const [categories, setCategories] = useState<Set<Category>>(
     () => new Set(CATEGORY_OPTIONS),
   );
@@ -48,8 +54,7 @@ export default function MapFilters({ entries }: { entries: MapEntry[] }) {
     return (
       <>
         <p className="border-b border-neutral-200 px-4 py-3 text-sm text-neutral-500 dark:border-neutral-800">
-          No entries with a location yet — add coordinates when creating an
-          entry to see it here.
+          {emptyMessage}
         </p>
         <div className="relative min-h-0 flex-1">
           <MapView entries={entries} />
