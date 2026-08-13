@@ -88,9 +88,37 @@ prefix — the bucket itself stays private.
 `/map` shows every entry with coordinates, clustered via MapLibre's built-in
 GeoJSON clustering (backed by supercluster). Individual entry pages embed the
 same `MapView` component focused on just that one pin. Coordinates come from
-either the uploaded photo's GPS EXIF data or manual placement via the
-location picker (click the map, or search an address — geocoded through
-Nominatim, proxied server-side in `GET /api/geocode`).
+either the uploaded photo's GPS EXIF data, the Google import search (see
+below), or clicking the location picker's map to drop a pin manually.
+
+## Importing from Google
+
+The entry form has an "Import from Google" field that takes a place name
+(e.g. "Joe's Pizza, New York NY") — or a `google.com/maps/place/...` URL, if
+you happen to have one — and fills in the title, address, coordinates,
+website, and place description (`locationDescription`).
+
+This needs a Google Places API key:
+
+1. Create/select a project at [console.cloud.google.com](https://console.cloud.google.com).
+2. Enable **Places API (New)**.
+3. Create an API key and restrict it to Places API.
+4. Set `GOOGLE_PLACES_API_KEY` in `.env`.
+
+Without a key, the import button just returns an error — everything else
+still works, and fields can always be filled in by hand.
+
+How it works (`src/lib/googlePlaces.ts`): the text is sent straight to the
+Places API's text search as-is (`editorialSummary` in the response is the
+place-description field). A Google Maps share link (`share.google/...`)
+can't be resolved server-side — it redirects via client-side JS to a Search
+results page, which is exactly the kind of automated traffic Google's bot
+detection blocks (confirmed while building this: a headless-browser
+resolution attempt got served Google's "unusual traffic" interstitial
+instead of the real page). So there's no link-following on the server at
+all — if you only have a share link, open it yourself and type in the name,
+or copy the resolved `maps.google.com/place/...` URL if your browser lands
+on one.
 
 ## What's not done yet
 

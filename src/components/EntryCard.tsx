@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PhotoPlaceholder from "@/components/PhotoPlaceholder";
 
 export type EntryCardData = {
   id: string;
@@ -26,9 +27,7 @@ export default function EntryCard({ entry }: { entry: EntryCardData }) {
             className="h-full w-full object-cover transition group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
-            No photo
-          </div>
+          <PhotoPlaceholder className="h-full w-full" />
         )}
       </div>
       <div className="flex flex-col gap-1 p-3">

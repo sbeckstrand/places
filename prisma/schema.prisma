@@ -60,17 +60,19 @@ model VerificationToken {
 }
 
 model Entry {
-  id           String   @id @default(cuid())
-  title        String
-  description  String?  @db.Text
-  locationName String?
-  latitude     Float?
-  longitude    Float?
-  website      String?
-  visitedAt    DateTime
-  rating       Int?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  title               String
+  description         String?  @db.Text
+  locationDescription String?  @db.Text
+  locationName        String?
+  address             String?
+  latitude            Float?
+  longitude           Float?
+  website             String?
+  visitedAt           DateTime
+  rating              Int?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   authorId String
   author   User    @relation(fields: [authorId], references: [id], onDelete: Cascade)

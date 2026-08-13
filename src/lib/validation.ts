@@ -17,7 +17,9 @@ export const entryPhotoSchema = z.object({
 export const entryInputSchema = z.object({
   title: z.string().min(1).max(200),
   description: optionalText(5000),
+  locationDescription: optionalText(2000),
   locationName: optionalText(200),
+  address: optionalText(300),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   website: z

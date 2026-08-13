@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   Map as MapLibreMap,
   Marker,
@@ -16,8 +16,6 @@ import {
 
 const DEFAULT_CENTER: [number, number] = [-98.5795, 39.8283];
 
-type GeocodeResult = { displayName: string; latitude: number; longitude: number };
-
 export default function LocationPicker({
   latitude,
   longitude,
@@ -31,10 +29,6 @@ export default function LocationPicker({
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const onChangeRef = useRef(onChange);
-
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<GeocodeResult[]>([]);
-  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -98,71 +92,13 @@ export default function LocationPicker({
     });
   }, [latitude, longitude]);
 
-  async function search() {
-    if (query.trim().length < 2) return;
-    setSearching(true);
-    try {
-      const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      setResults(data.results ?? []);
-    } finally {
-      setSearching(false);
-    }
-  }
-
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              search();
-            }
-          }}
-          placeholder="Search for an address or place..."
-          className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-        />
-        <button
-          type="button"
-          onClick={search}
-          disabled={searching}
-          className="rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700"
-        >
-          {searching ? "Searching…" : "Search"}
-        </button>
-      </div>
-
-      {results.length > 0 && (
-        <ul className="flex flex-col divide-y divide-neutral-200 rounded-md border border-neutral-200 text-sm dark:divide-neutral-800 dark:border-neutral-800">
-          {results.map((r, i) => (
-            <li key={i}>
-              <button
-                type="button"
-                className="w-full px-3 py-2 text-left hover:bg-neutral-50 dark:hover:bg-neutral-900"
-                onClick={() => {
-                  onChangeRef.current(r.latitude, r.longitude);
-                  setResults([]);
-                  setQuery(r.displayName);
-                }}
-              >
-                {r.displayName}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
       <div
         ref={mapContainer}
         className="h-64 w-full overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-800"
       />
-      <p className="text-xs text-neutral-500">
-        Click the map to drop a pin, or search above.
-      </p>
+      <p className="text-xs text-neutral-500">Click the map to drop a pin.</p>
     </div>
   );
 }

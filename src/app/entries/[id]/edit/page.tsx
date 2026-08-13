@@ -30,7 +30,9 @@ export default async function EditEntryPage({
         initial={{
           title: entry.title,
           description: entry.description ?? "",
+          locationDescription: entry.locationDescription ?? "",
           locationName: entry.locationName ?? "",
+          address: entry.address ?? "",
           latitude: entry.latitude,
           longitude: entry.longitude,
           website: entry.website ?? "",

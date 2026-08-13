@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import MapView from "@/components/MapView";
 import DeleteEntryButton from "@/components/DeleteEntryButton";
+import PhotoPlaceholder from "@/components/PhotoPlaceholder";
 
 export default async function EntryDetailPage({
   params,
@@ -35,6 +36,14 @@ export default async function EntryDetailPage({
             {entry.locationName && <span>{entry.locationName}</span>}
             {entry.rating != null && <span>{"★".repeat(entry.rating)}</span>}
           </div>
+          {entry.address && (
+            <p className="mt-1 text-sm text-neutral-500">{entry.address}</p>
+          )}
+          {entry.locationDescription && (
+            <p className="mt-1 text-sm italic text-neutral-500">
+              {entry.locationDescription}
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 gap-2">
           <Link
@@ -47,7 +56,7 @@ export default async function EntryDetailPage({
         </div>
       </div>
 
-      {entry.photos.length > 0 && (
+      {entry.photos.length > 0 ? (
         <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {entry.photos.map((photo) => (
             // eslint-disable-next-line @next/next/no-img-element
@@ -59,6 +68,8 @@ export default async function EntryDetailPage({
             />
           ))}
         </div>
+      ) : (
+        <PhotoPlaceholder className="mb-6 aspect-[4/3] w-full max-w-xs rounded-md" />
       )}
 
       {entry.website && (
@@ -75,9 +86,14 @@ export default async function EntryDetailPage({
       )}
 
       {entry.description && (
-        <p className="mb-6 whitespace-pre-wrap text-neutral-700 dark:text-neutral-300">
-          {entry.description}
-        </p>
+        <div className="mb-6">
+          <h2 className="mb-1 text-sm font-medium text-neutral-500">
+            Your review
+          </h2>
+          <p className="whitespace-pre-wrap text-neutral-700 dark:text-neutral-300">
+            {entry.description}
+          </p>
+        </div>
       )}
 
       {hasLocation && (
