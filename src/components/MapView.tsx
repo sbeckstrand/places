@@ -234,8 +234,11 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
         type: "geojson",
         data: entriesToGeoJSON(entriesRef.current),
         cluster: true,
+        // Lower than MapLibre's defaults (14 / 50px) so pins only merge once
+        // they're genuinely close together on screen, and stop clustering
+        // entirely well before street-level zoom.
         clusterMaxZoom: 14,
-        clusterRadius: 50,
+        clusterRadius: 20,
       });
 
       map.addLayer({
