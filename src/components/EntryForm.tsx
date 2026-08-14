@@ -180,10 +180,16 @@ export default function EntryForm({
                     storageKey: data.storageKey,
                     width: data.width,
                     height: data.height,
+                    // Swap in the stored version — the server may have
+                    // transcoded the upload (e.g. HEIC -> JPEG), so the
+                    // original file's blob URL can no longer be relied on
+                    // to render.
+                    previewUrl: `/api/images/${data.storageKey}`,
                   }
                 : p,
             ),
           );
+          URL.revokeObjectURL(item.previewUrl);
 
           if (data.gps && latitude == null && longitude == null) {
             setLatitude(data.gps.latitude);
