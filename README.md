@@ -143,25 +143,45 @@ the proxy only decides who's allowed to *ask*.
 
 ## CI / container image
 
-`.github/workflows/docker-build.yaml` builds the same `Dockerfile` used for
-local dev and pushes it to `ghcr.io/sbeckstrand/foodie` on every push to
-`main` (or manually via `workflow_dispatch`), tagged with the short commit
-SHA. A second job then updates the image tag in the `k8s-apps` repo
-(`apps/services/foodie/values-image.yaml`, using the `K8S_APPS_PAT` secret)
+`.github/workflows/docker-build.yaml` builds `Dockerfile`'s default target
+and pushes it to `ghcr.io/sbeckstrand/foodie` on every push to `main` (or
+manually via `workflow_dispatch`), tagged with the short commit SHA. A second
+job then updates the image tag in the `k8s-apps` repo
+(`apps/services/places/values-image.yaml`, using the `K8S_APPS_PAT` secret)
 for GitOps-style deploys.
 
-Note this publishes the *dev* image as-is (`next dev`, expects the repo
-bind-mounted in via `docker-compose.yml` for hot reload) — it's not yet a
-standalone production image (`next build` + `next start`, prod deps only).
-The rest of the Helm chart (`Chart.yaml`, `deployment.yaml`, `service.yaml`,
-`ingress.yaml`) also doesn't exist in `k8s-apps` yet, so nothing actually
-deploys from this yet — the pipeline just keeps a pullable image and an
-up-to-date tag file ready for whenever that's built out.
+`Dockerfile` is multi-stage with two independent targets:
+
+- **`dev`** (what `docker-compose.yml` builds via `target: dev`) — installs
+  everything and defers to the bind-mounted source + `next dev` for local hot
+  reload, same as before.
+- **`runner`** (the default target, last in the file, so CI's plain
+  `docker build` picks it automatically) — a real `next build`, run via
+  `next start`. The entrypoint (`docker/entrypoint-prod.sh`) calls the
+  installed binaries directly (`node_modules/.bin/{prisma,tsx,next}`) rather
+  than `pnpm exec`/`pnpm start` — pnpm re-verifies the lockfile against
+  `node_modules` on every invocation, and since this stage only copies
+  `node_modules` (no `pnpm-lock.yaml`), that re-triggers a full install on
+  every container start, which then fails on the interactive supply-chain
+  build-script approval gate.
+
+Switching off `next dev` in production wasn't just a size/performance
+cleanup — it fixed several real bugs that only manifested under real traffic:
+a `next dev`-only cross-origin guard that silently broke all client-side
+interactivity when accessed via a non-localhost hostname, each replica
+generating its own random Server Actions encryption key at startup (so form
+submissions failed whenever they landed on a different pod than the one that
+rendered the page), and a hydration-timing race where the page looked ready
+before the (much larger, unminified) dev bundle had actually finished
+hydrating.
+
+One more prod-only env var this required: `@auth/core` only auto-trusts the
+request's `Host` header when `NODE_ENV !== "production"` — dev mode got this
+for free, but behind Traefik in production it needs `AUTH_TRUST_HOST=true`
+set explicitly (already wired into the chart).
 
 ## What's not done yet
 
 - Real Google OAuth credentials (code path is ready — see Auth above)
-- A production image (`next build`/`next start`) and the rest of the Helm
-  chart in `k8s-apps` — see CI section above
 - Production deployment config (real S3, managed Postgres, secrets management)
 - Automated tests
