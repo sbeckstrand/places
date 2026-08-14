@@ -49,7 +49,9 @@ services:
       "
 
   app:
-    build: .
+    build:
+      context: .
+      target: dev
     restart: unless-stopped
     env_file:
       - .env
