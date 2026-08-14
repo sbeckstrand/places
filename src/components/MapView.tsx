@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Map as MapLibreMap,
-  LngLatBounds,
   NavigationControl,
   Popup,
   type DataDrivenPropertyValueSpecification,
@@ -24,6 +23,46 @@ import { formatVisitedDate } from "@/lib/formatDate";
 import type { Category } from "@/generated/prisma/enums";
 
 const DEFAULT_CENTER: [number, number] = [-98.5795, 39.8283];
+
+// Camera position is remembered per map page (keyed by pathname) for the
+// current tab session, so tapping a pin, viewing the entry, then going back
+// — especially painful on mobile, where that's a native back gesture rather
+// than something this app controls — lands back where you were instead of
+// re-fitting/resetting the view.
+const CAMERA_STORAGE_PREFIX = "places:map-camera:";
+
+type SavedCamera = {
+  lng: number;
+  lat: number;
+  zoom: number;
+  bearing: number;
+  pitch: number;
+};
+
+function loadSavedCamera(key: string): SavedCamera | null {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as SavedCamera) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCamera(key: string, map: MapLibreMap) {
+  try {
+    const center = map.getCenter();
+    const camera: SavedCamera = {
+      lng: center.lng,
+      lat: center.lat,
+      zoom: map.getZoom(),
+      bearing: map.getBearing(),
+      pitch: map.getPitch(),
+    };
+    sessionStorage.setItem(key, JSON.stringify(camera));
+  } catch {
+    // sessionStorage may be unavailable (private browsing, etc.) — best-effort only
+  }
+}
 
 // Same glyph as PhotoPlaceholder — this popup is built with raw DOM calls
 // (it's MapLibre popup content, not React), so it's inlined as markup here
@@ -84,6 +123,7 @@ function entriesToGeoJSON(
 export default function MapView({ entries }: { entries: MapEntry[] }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const routerRef = useRef(router);
   const mapRef = useRef<MapLibreMap | null>(null);
   // Kept current on every render so the mount-once effect below (and its
@@ -118,24 +158,21 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    const initialEntries = entriesRef.current;
-
-    let bounds: LngLatBounds | null = null;
-    if (initialEntries.length > 0) {
-      bounds = initialEntries.reduce(
-        (b, e) => b.extend([e.longitude, e.latitude]),
-        new LngLatBounds(
-          [initialEntries[0].longitude, initialEntries[0].latitude],
-          [initialEntries[0].longitude, initialEntries[0].latitude],
-        ),
-      );
-    }
+    const cameraKey = CAMERA_STORAGE_PREFIX + pathname;
+    const savedCamera = loadSavedCamera(cameraKey);
 
     const map = new MapLibreMap({
       container: mapContainer.current,
       style: mapStyleFor(isDarkTheme()),
-      center: bounds ? bounds.getCenter() : DEFAULT_CENTER,
-      zoom: bounds ? 11 : 3,
+      // First-ever visit (no saved camera yet) always starts zoomed out on
+      // the US rather than auto-fitting to entries — fitting tight clusters
+      // of nearby entries was zooming in much further than expected. Once
+      // the user pans/zooms themselves, that position is what gets restored
+      // on later visits (see the moveend listener below).
+      center: savedCamera ? [savedCamera.lng, savedCamera.lat] : DEFAULT_CENTER,
+      zoom: savedCamera ? savedCamera.zoom : 3,
+      bearing: savedCamera?.bearing ?? 0,
+      pitch: savedCamera?.pitch ?? 0,
       // Collapses the required OSM/OpenFreeMap attribution to a small "i"
       // icon by default instead of always showing the full text — it's
       // still there and expands on click, just not taking up space.
@@ -217,17 +254,7 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
     // map.setStyle() call (e.g. from a theme switch), since setStyle wipes
     // all custom sources/layers and "style.load" fires again once the new
     // style is ready.
-    let hasFitBounds = false;
     function setupLayers() {
-      if (!hasFitBounds && bounds && initialEntries.length > 1) {
-        // animate:false makes this an instant jump rather than an eased
-        // transition — appropriate for the initial fit, and avoids relying
-        // on a requestAnimationFrame-driven animation actually progressing
-        // before the user looks at the map.
-        map.fitBounds(bounds, { padding: 60, maxZoom: 15, animate: false });
-        hasFitBounds = true;
-      }
-
       // Reads the ref (not the initial closure) so a style reload — e.g.
       // from a theme switch — rebuilds the source with whatever's currently
       // filtered in, not what was passed in on mount.
@@ -363,7 +390,10 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
       map.setStyle(mapStyleFor(dark));
     });
 
+    map.on("moveend", () => saveCamera(cameraKey, map));
+
     return () => {
+      saveCamera(cameraKey, map);
       stopWatchingTheme();
       map.remove();
       mapRef.current = null;
@@ -371,7 +401,10 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
     // Mount-once: creates the map using whichever `entries` were passed on
     // first render (see entriesRef/skipNextUpdate above for how later prop
     // changes — e.g. toggling a map filter — get applied without rebuilding
-    // the map and losing the camera position).
+    // the map and losing the camera position). `pathname` is read once here
+    // too (as the sessionStorage key) — it can't change without this
+    // component unmounting first, since it's rendered from a page component.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // The ref'd div becomes `.maplibregl-map` (maplibre-gl adds that class
