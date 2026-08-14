@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getSharedOwnerIds } from "@/lib/mapAccess";
 import MapFilters from "@/components/MapFilters";
 import CopyLinkButton from "@/components/CopyLinkButton";
 
@@ -7,9 +8,11 @@ export default async function MapPage() {
   const session = await auth();
   if (!session?.user) return null;
 
+  const sharedOwnerIds = await getSharedOwnerIds(session.user.email);
+
   const entries = await db.entry.findMany({
     where: {
-      authorId: session.user.id,
+      authorId: { in: [session.user.id, ...sharedOwnerIds] },
       latitude: { not: null },
       longitude: { not: null },
     },
@@ -21,6 +24,8 @@ export default async function MapPage() {
       visitedAt: true,
       category: true,
       rating: true,
+      authorId: true,
+      author: { select: { name: true, email: true } },
       photos: { orderBy: { createdAt: "asc" }, take: 1, select: { storageKey: true } },
     },
   });
@@ -34,6 +39,11 @@ export default async function MapPage() {
     category: e.category,
     rating: e.rating,
     thumbnailKey: e.photos[0]?.storageKey ?? null,
+    ownerId: e.authorId,
+    ownerName:
+      e.authorId === session.user.id
+        ? null
+        : (e.author.name ?? e.author.email),
   }));
 
   return (

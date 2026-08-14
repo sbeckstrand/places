@@ -38,3 +38,7 @@ export const entryInputSchema = z.object({
 });
 
 export const entryUpdateSchema = entryInputSchema.partial();
+
+export const shareEmailSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(320),
+});

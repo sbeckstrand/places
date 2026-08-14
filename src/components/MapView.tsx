@@ -98,6 +98,11 @@ export type MapEntry = {
   category: Category;
   rating: number | null;
   thumbnailKey: string | null;
+  ownerId: string;
+  // Set only for entries that belong to someone other than the viewer (i.e.
+  // shared with the viewer via a MapShare) — null for the viewer's own
+  // entries, so the picker only bothers labeling ones that need it.
+  ownerName: string | null;
 };
 
 function entriesToGeoJSON(
@@ -114,6 +119,7 @@ function entriesToGeoJSON(
         category: e.category,
         rating: e.rating,
         thumbnailKey: e.thumbnailKey,
+        ownerName: e.ownerName,
       },
       geometry: { type: "Point", coordinates: [e.longitude, e.latitude] },
     })),
@@ -188,7 +194,7 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
       lngLat: [number, number],
       items: Pick<
         MapEntry,
-        "id" | "title" | "visitedAt" | "rating" | "thumbnailKey"
+        "id" | "title" | "visitedAt" | "rating" | "thumbnailKey" | "ownerName"
       >[],
     ) {
       currentPopup?.remove();
@@ -239,6 +245,13 @@ export default function MapView({ entries }: { entries: MapEntry[] }) {
           metaEl.appendChild(starsEl);
         }
         textWrap.appendChild(metaEl);
+
+        if (item.ownerName) {
+          const ownerEl = document.createElement("span");
+          ownerEl.className = "truncate text-xs text-neutral-400 dark:text-neutral-500";
+          ownerEl.textContent = `Shared by ${item.ownerName}`;
+          textWrap.appendChild(ownerEl);
+        }
 
         btn.appendChild(textWrap);
         list.appendChild(btn);

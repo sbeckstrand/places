@@ -21,11 +21,28 @@ export default async function EntryDetailPage({
   const { id } = await params;
   const entry = await db.entry.findUnique({
     where: { id },
-    include: { photos: { orderBy: { createdAt: "asc" } } },
+    include: {
+      photos: { orderBy: { createdAt: "asc" } },
+      author: { select: { name: true, email: true } },
+    },
   });
 
   const isOwner = !!session?.user && entry?.authorId === session.user.id;
-  if (!entry || (!entry.isPublic && !isOwner)) {
+
+  let isSharedWithViewer = false;
+  if (entry && !isOwner && !entry.isPublic && session?.user?.email) {
+    const share = await db.mapShare.findUnique({
+      where: {
+        ownerId_sharedWithEmail: {
+          ownerId: entry.authorId,
+          sharedWithEmail: session.user.email.toLowerCase(),
+        },
+      },
+    });
+    isSharedWithViewer = !!share;
+  }
+
+  if (!entry || (!entry.isPublic && !isOwner && !isSharedWithViewer)) {
     notFound();
   }
 
@@ -44,6 +61,9 @@ export default async function EntryDetailPage({
               <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                 Public
               </span>
+            )}
+            {!isOwner && (
+              <span>Shared by {entry.author.name ?? entry.author.email}</span>
             )}
             <time>{formatVisitedDate(entry.visitedAt)}</time>
             {entry.locationName && <span>{entry.locationName}</span>}
@@ -122,6 +142,8 @@ export default async function EntryDetailPage({
                 category: entry.category,
                 rating: entry.rating,
                 thumbnailKey: entry.photos[0]?.storageKey ?? null,
+                ownerId: entry.authorId,
+                ownerName: null,
               },
             ]}
           />

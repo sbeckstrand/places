@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { getSharedOwnerIds } from "@/lib/mapAccess";
 import MapFilters from "@/components/MapFilters";
 
 export default async function PublicUserMapPage({
@@ -11,13 +12,18 @@ export default async function PublicUserMapPage({
 
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { name: true },
+    select: { name: true, email: true },
   });
   if (!user) notFound();
 
+  // People who've shared their map with this profile's owner also show up
+  // here (public entries only, same as the profile owner's own) — keeps the
+  // public link consistent with what the owner sees on their own /map.
+  const sharedOwnerIds = await getSharedOwnerIds(user.email);
+
   const entries = await db.entry.findMany({
     where: {
-      authorId: userId,
+      authorId: { in: [userId, ...sharedOwnerIds] },
       isPublic: true,
       latitude: { not: null },
       longitude: { not: null },
@@ -30,6 +36,8 @@ export default async function PublicUserMapPage({
       visitedAt: true,
       category: true,
       rating: true,
+      authorId: true,
+      author: { select: { name: true, email: true } },
       photos: { orderBy: { createdAt: "asc" }, take: 1, select: { storageKey: true } },
     },
   });
@@ -43,7 +51,11 @@ export default async function PublicUserMapPage({
     category: e.category,
     rating: e.rating,
     thumbnailKey: e.photos[0]?.storageKey ?? null,
+    ownerId: e.authorId,
+    ownerName: e.authorId === userId ? null : (e.author.name ?? e.author.email),
   }));
+
+  const ownerLabel = user.name ?? user.email;
 
   return (
     <main className="flex min-h-0 flex-1 flex-col">
@@ -55,6 +67,7 @@ export default async function PublicUserMapPage({
       <MapFilters
         entries={mapEntries}
         emptyMessage="No public entries with a location yet."
+        selfLabel={ownerLabel}
       />
     </main>
   );

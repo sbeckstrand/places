@@ -16,9 +16,26 @@ model User {
   emailVerified DateTime?
   createdAt     DateTime  @default(now())
 
-  accounts Account[]
-  sessions Session[]
-  entries  Entry[]
+  accounts       Account[]
+  sessions       Session[]
+  entries        Entry[]
+  mapSharesOwned MapShare[] @relation("MapSharesOwned")
+}
+
+// A one-way grant: `owner` lets `sharedWithEmail` see all of their entries
+// (public and private) on that person's own map. Keyed by email rather than
+// a User relation because the recipient doesn't need an account yet —
+// access resolves the moment someone signs in with a matching email.
+model MapShare {
+  id              String   @id @default(cuid())
+  sharedWithEmail String
+  createdAt       DateTime @default(now())
+
+  ownerId String
+  owner   User   @relation("MapSharesOwned", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, sharedWithEmail])
+  @@index([sharedWithEmail])
 }
 
 // Auth.js Prisma adapter tables — needed for OAuth (Google) support later,
